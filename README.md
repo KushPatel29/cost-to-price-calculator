@@ -4,6 +4,8 @@
 ![tests](https://img.shields.io/badge/tests-55-brightgreen)
 ![python](https://img.shields.io/badge/python-3.12-blue)
 
+**Live app:** [cost-to-price-calculator.streamlit.app](https://cost-to-price-calculator.streamlit.app/)
+
 A Streamlit tool that walks a product from a vendor invoice to a selling price
 at a meat processor, and pushes the result back into the ERP's price list.
 
