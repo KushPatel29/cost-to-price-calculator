@@ -329,32 +329,78 @@ def update_export_sheet(df_export: pd.DataFrame, df_cost_updated: pd.DataFrame, 
     return df_export_updated, updated_flag
 
 # --- MAIN APP Logic ---
-st.markdown(f'<div class="title">item Product Cost Adjustment Tool</div>', unsafe_allow_html=True)
+st.markdown('<div class="title">Cost-to-Price Calculator</div>', unsafe_allow_html=True)
 st.markdown(f'<div class="subtitle">Bulk pricing update· Version {VERSION}</div>', unsafe_allow_html=True)
 
 with st.sidebar:
     st.header("🔧 Instructions")
     st.markdown("""
-    - Upload both the **Cost Sheet** and **Export Sheet** Excel files.
-    - If using different sheet names, specify them in the main page.
-    - You may update prices by editing the table below, or by uploading a CSV/Excel of new prices.
+    - Starts on **generated sample data**, so you can try it straight away.
+    - To use your own, switch to **Upload my own files** and supply the
+      **Cost Sheet** and **Export Sheet**; set the sheet names if they differ.
+    - Update prices by editing the table, or by uploading a CSV/Excel of new prices.
     - Review all changes, then click **Apply All Cost Changes**.
     - Download both updated sheets as a single ZIP.
     """)
 
-st.markdown('<div class="header">Step 1: Upload Excel Files</div>', unsafe_allow_html=True)
-col1, col2 = st.columns(2)
-with col1:
-    cost_file = st.file_uploader("Upload Cost Sheet (XLSX)", type=["xlsx"], key="cost")
-with col2:
-    export_file = st.file_uploader("Upload Export Sheet (XLSX)", type=["xlsx"], key="export")
+SOURCE_SAMPLE = "Sample data (generated)"
+SOURCE_UPLOAD = "Upload my own files"
 
-if cost_file and export_file:
-    cost_sheet_name = st.text_input("Cost Sheet Name:", value="Final Copy").strip()
-    export_sheet_name = st.text_input("Export Sheet Name:", value="AllProducts").strip()
-    df_cost, df_export, other_sheets = read_files(cost_file, export_file, cost_sheet_name, export_sheet_name)
-    if df_cost is None or df_export is None:
-        st.stop()
+
+@st.cache_data(show_spinner="Generating sample sheets…")
+def _sample_frames(items: int = 90, seed: int = 613):
+    """
+    Build the two sheets the tool expects, in memory.
+
+    The calculator needs a cost sheet and an ERP export before it can do
+    anything, and a visitor following a link has neither. Generating them means
+    the app is usable on arrival instead of showing two empty file pickers.
+    """
+    from seed.generate_sheets import generate
+
+    return generate(seed=seed, items=items)
+
+
+st.markdown('<div class="header">Step 1: Choose your data</div>', unsafe_allow_html=True)
+source = st.radio(
+    "Data source",
+    (SOURCE_SAMPLE, SOURCE_UPLOAD),
+    horizontal=True,
+    label_visibility="collapsed",
+    key="data_source",
+)
+
+df_cost = df_export = None
+other_sheets = {}
+
+if source == SOURCE_SAMPLE:
+    st.info(
+        "Showing generated sample data — 90 items built by `seed/generate_sheets.py` "
+        "with a fixed seed. Nothing here comes from a real business. "
+        "Switch to **Upload my own files** to run the tool on your own sheets."
+    )
+    df_cost, df_export = _sample_frames()
+    df_cost = df_cost.copy()
+    df_export = df_export.copy()
+else:
+    col1, col2 = st.columns(2)
+    with col1:
+        cost_file = st.file_uploader("Upload Cost Sheet (XLSX)", type=["xlsx"], key="cost")
+    with col2:
+        export_file = st.file_uploader("Upload Export Sheet (XLSX)", type=["xlsx"], key="export")
+
+    if cost_file and export_file:
+        cost_sheet_name = st.text_input("Cost Sheet Name:", value="Cost Sheet").strip()
+        export_sheet_name = st.text_input("Export Sheet Name:", value="AllProducts").strip()
+        df_cost, df_export, other_sheets = read_files(
+            cost_file, export_file, cost_sheet_name, export_sheet_name
+        )
+        if df_cost is None or df_export is None:
+            st.stop()
+    else:
+        st.caption("Upload both sheets to continue, or switch back to the sample data.")
+
+if df_cost is not None and df_export is not None:
     cost_required = {
         "Item Code", "lb Per Billling UOM", "Supplier S Name", "Vendor Invoice Price",
         "Actual Inv Cost(lb)", "Adj", "Market Cost", "Freight", "Landed Cost",
@@ -372,7 +418,10 @@ if cost_file and export_file:
         st.stop()
     if not validate_columns(df_export, export_required, "Export Sheet"):
         st.stop()
-    st.success("✅ Files uploaded successfully!")
+    if source == SOURCE_SAMPLE:
+        st.success(f"✅ Loaded {len(df_cost):,} generated items — ready to reprice.")
+    else:
+        st.success("✅ Files uploaded successfully!")
     st.markdown('<div class="header">Preview Sheets</div>', unsafe_allow_html=True)
     c1, c2 = st.columns(2)
     with c1:
