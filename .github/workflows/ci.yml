@@ -18,7 +18,7 @@ jobs:
       - name: ruff
         run: ruff check costing seed tests
       - name: pytest
-        run: pytest -q
+        run: python -m pytest -q
       - name: Sample sheets generate
         run: python -m seed.generate_sheets
       - name: Streamlit app imports cleanly
