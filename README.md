@@ -16,9 +16,12 @@ target margin. Getting any of those wrong changes the price of everything.
 
 ```bash
 pip install -r requirements.txt
-python -m seed.generate_sheets    # writes two sample workbooks
 streamlit run app/streamlit_app.py
 ```
+
+It opens on generated sample data, so there is nothing to prepare — 90 items
+built by `seed/generate_sheets.py` with a fixed seed. Switch the radio to
+**Upload my own files** to run it on your own cost sheet and ERP export.
 
 ---
 
