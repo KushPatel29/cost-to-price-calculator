@@ -1,10 +1,19 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
 import io
+import logging
+import sys
 import zipfile
 from datetime import datetime
-import logging
+from pathlib import Path
+
+# Streamlit Cloud executes this file with ``app/`` as the import root. Add the
+# repository root so the shared, testable pricing package resolves everywhere.
+ROOT_DIR = Path(__file__).resolve().parents[1]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+import numpy as np
+import pandas as pd
+import streamlit as st
 
 # --- Logging Setup ---
 logging.basicConfig(level=logging.INFO)
